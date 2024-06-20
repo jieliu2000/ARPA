@@ -15,6 +15,31 @@ class ImageHandler:
         # If the point is inside the rectangle
         return rect[0] <= point[0] <= rect[0] + rect[2] and rect[1] <= point[1] <= rect[1] + rect[3]
     
+    def find_image_location(self, image, parentImage):
+        if parentImage is None or image is None:
+            return None
+        # Find the location of the image in the parent image
+        if self.debug_mode:
+            cv2.imshow('shapes', np.array(parentImage)) 
+            cv2.waitKey(0)
+
+        gray = cv2.cvtColor(np.array(parentImage), cv2.COLOR_BGR2GRAY)
+        
+        target = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2GRAY)
+        
+        # Use template matching to find the location of the image in the parent image
+        # result = cv2.matchTemplate(gray, target, cv2.TM_CCOEFF_NORMED)
+        result = cv2.matchTemplate(gray, target, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        top_left = max_loc
+            
+        # Get the size of the image
+        image_size = image.size
+        
+        # Return the rectangle representing the location of the image in the parent image
+        return (top_left[0], top_left[1], image_size[0], image_size[1]) 
+
+        pass
 
     def find_text_in_image(self, image, text, rect=None):
         if self.debug_mode:

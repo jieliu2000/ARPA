@@ -1,4 +1,5 @@
 
+import PIL.Image
 from robot.api.deco import keyword, library, not_keyword
 from robot.api import logger
 import re
@@ -133,12 +134,22 @@ class ARPA:
                 self.sleep()
             
 
-    def click(self, locator):
+    def click(self, locator,  button='left', double_click= False):
         '''Click on a control. The parameter could be a locator or the control's text (like the button text or the field name)'''
         if(isinstance(locator, str) and locator.startswith('ocr:')):
-            logger.debug('Clicking OCR:', locator)
-            pass
+            path = locator.split('ocr:')[1]
+            logger.debug('Clicking OCR:', path)
+
+            self.click_by_image(path, button, double_click)
         pass
+
+    def click_by_image(self, image_path, button='left', double_click= False):
+        img = PIL.Image.open(image_path)
+        screenshot = self.take_screenshot()
+            
+        location = self.image_handler.find_image_location(img, screenshot)
+        if(location is not None):
+                self.click_by_position(int(location[0]) + 2, int(location[1]) + 2)
 
     def click_by_text_inside_window(self, text, window_title, button='left', double_click= False):
         '''Click the positon of a string on screen. '''
