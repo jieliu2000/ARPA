@@ -7,6 +7,7 @@ from pywinauto import mouse, keyboard, findwindows, Application
 import pyautogui
 import time
 import platform
+from datetime import datetime
 from .image_handler import ImageHandler
 import os
 __version__ = '0.1'
@@ -61,13 +62,14 @@ class ARPA:
 
     def wait_until_text_exists(self, text, parent_control = None, img = None, timeout = 30):
         '''Wait until a specific text exists in the current screen. This function will return the location if the text exists, otherwise it will return None.'''
-        start_time = time.time()
+        start_time = datetime.now()
         while(True):
             location = self.validate_text_exists(text, parent_control, img)
             if(location is not None):
                 return location 
             else:
-                if(time.time() - start_time > timeout):
+                diff = datetime.now() - start_time
+                if(diff.seconds > timeout):
                     raise AssertionError('Timeout waiting for text: ' + text)
                 self.sleep(1)
                 img = None
