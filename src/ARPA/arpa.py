@@ -79,8 +79,8 @@ class ARPA:
             img = self.take_screenshot()
         
         location = self.image_handler.find_text_in_image(img, text, parent_control)
-        if(location is None):
-            return False
+        if(location is None or location[0] is None or location[1] is None):
+            return None
         else:
             return location
         
