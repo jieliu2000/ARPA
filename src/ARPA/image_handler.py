@@ -4,8 +4,13 @@ import numpy as np
 from difflib import SequenceMatcher
 
 class ImageHandler:
-    def __init__(self, debug_mode = False):
+    def __init__(self, debug_mode = False, languages = ['ch_sim','en'], debug_image_show_seconds=10):
+        '''
+        Initialize the ImageHandler class. This class use EasyOCR for text OCR. About language codes please check https://www.jaided.ai/easyocr/'''
         self.debug_mode = debug_mode
+        self.languages = languages
+        self.debug_image_show_milliseconds = debug_image_show_seconds * 1000
+        self.reader = easyocr.Reader(languages) # this needs to run only once to load the model into memory
         pass
     
     def check_point_inide_rect(self, point, rect):
@@ -21,7 +26,7 @@ class ImageHandler:
         # Find the location of the image in the parent image
         if self.debug_mode:
             cv2.imshow('shapes', np.array(parentImage)) 
-            cv2.waitKey(0)
+            cv2.waitKey(self.debug_image_show_milliseconds)
 
         gray = cv2.cvtColor(np.array(parentImage), cv2.COLOR_BGR2GRAY)
         
@@ -41,16 +46,27 @@ class ImageHandler:
 
         pass
 
-    def find_text_in_image(self, image, text, rect=None):
+    def check_text_and_filter(self, image, arrays, position, text, filter_args_in_parent, rect=None):
+        if filter_args_in_parent is None:
+            return True
+        window = self.find_window_outside_position(image, position)
+        if window is None:
+            return False
+        return True
+
+    def find_text_in_image(self, image,  text, filter_args_in_parent=None, rect=None):
+        '''
+        Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
+        If the text is not found, returns None.
+        '''
         if self.debug_mode:
             cv2.imshow('shapes', np.array(image)) 
-            cv2.waitKey(0)
-        reader = easyocr.Reader(['ch_sim','en']) # this needs to run only once to load the model into memory
-        arr = reader.readtext(np.array(image))
+            cv2.waitKey(self.debug_image_show_milliseconds)
+        arr = self.reader.readtext(np.array(image))
         (position, target_text, best_ratio) = None, None, 0
         for r in arr:  
             ratio = SequenceMatcher(None, r[1], text).ratio()
-            if  text in r[1] and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None):  
+            if  text in r[1] and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter(image, arr, r[0], r[1], filter_args_in_parent, rect):  
                 position = r[0]
                 target_text = r[1]
                 break
@@ -63,11 +79,63 @@ class ImageHandler:
         if target_text is None:
             return None, None
         
-        return (position[0], position[1])
+        return (position[0][0], position[0][1], position[1][0]-position[0][0], position[2][1]-position[0][1])
 
+    def validate_inside(self, rect, target):
+        # Check if the rectangle is inside the target rectangle. Paramete rect and target's formats are (x, y, width, height)
+        return rect[0] <= target[0] and rect[1] <= target[1] and rect[0] + rect[2] >= target[0] + target[2] and rect[1] + rect[3] >= target[1] + target[3]
 
-    def find_window_near_position(self, image, target):
-        return self.find_control_near_position(image, target)
+    def find_window_outside_position(self, image, target):
+        img = np.array(image)
+        # converting image into grayscale image 
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
+      
+        # setting threshold of gray image 
+        edged = cv2.Canny(gray, 50, 200, apertureSize = 5) 
+
+        # using a findContours() function 
+        contours, _ = cv2.findContours( 
+            edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+        
+        i = 0
+        dist = 1000000
+        a = 0
+        target_information = None
+
+        if self.debug_mode:
+            cv2.drawContours(img, contours, -1, (0, 255, 0), 1)  
+            cv2.imshow('shapes', img) 
+            cv2.waitKey(self.debug_image_show_milliseconds)
+
+        # list for storing names of shapes 
+        for contour in contours: 
+            # Approximate contour to a polygon
+            perimeter = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.01 * perimeter, True)
+
+            # Calculate aspect ratio and bounding box
+            if len(approx) == 4:
+                x, y, w, h = cv2.boundingRect(approx)
+
+                if(h<10 and w<10):
+                    #ignore too small shapes
+                    continue
+
+                dist1 = abs(cv2.pointPolygonTest(contour,(float(target[0]), float(target[1])),True))
+        
+                if(self.validate_inside((x, y, w, h), target) and dist1 < dist):
+                    dist = dist1
+                    target_information = approx, (x, y, w, h)
+        
+        if(target_information is None):
+            return None
+        if self.debug_mode:
+            cv2.drawContours(img, [target_information[0]], -1, (255, 0, 0), 1)
+            cv2.imshow('target', img) 
+            cv2.waitKey(self.debug_image_show_milliseconds)
+   
+        return target_information[1]
+    
 
     def find_control_near_position(self, image, target):
         img = np.array(image)
@@ -81,9 +149,6 @@ class ImageHandler:
         contours, _ = cv2.findContours( 
             edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
         
-        if self.debug_mode:
-            cv2.drawContours(img, contours, -1, (0, 255, 0), 1) 
-
         i = 0
         dist = 1000000
         a = 0
@@ -109,12 +174,12 @@ class ImageHandler:
                     dist = dist1
                     target_information = approx, (x, y, w, h)
         # displaying the image after drawing contours 
+        if(target_information is None):
+            return None
         if self.debug_mode:
             cv2.drawContours(img, [target_information[0]], -1, (0, 255, 0), 1)
             cv2.imshow('shapes', img) 
-            cv2.waitKey(0)
-        if(target_information != None):
-            #cv2.destroyAllWindows()
-            return target_information[1]
-        return None
+            cv2.waitKey(self.debug_image_show_milliseconds)
+   
+        return target_information[1]
     
