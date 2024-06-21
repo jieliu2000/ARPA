@@ -4,7 +4,7 @@ import numpy as np
 from difflib import SequenceMatcher
 
 class ImageHandler:
-    def __init__(self, debug_mode = False, languages = ['ch_sim','en'], debug_image_show_seconds=10):
+    def __init__(self, debug_mode = False, languages = ['ch_sim','en'], debug_image_show_seconds=5):
         '''
         Initialize the ImageHandler class. This class use EasyOCR for text OCR. About language codes please check https://www.jaided.ai/easyocr/'''
         self.debug_mode = debug_mode
@@ -18,7 +18,8 @@ class ImageHandler:
         if point is None or rect is None:
             return False
         # If the point is inside the rectangle
-        return rect[0] <= point[0] <= rect[0] + rect[2] and rect[1] <= point[1] <= rect[1] + rect[3]
+        return rect[0] <= point[0] and rect[1] <= point[1] and rect[0] + rect[2] >= point[0] and rect[1] + rect[3] >= point[1]
+        
     
     def find_image_location(self, image, parentImage):
         if parentImage is None or image is None:
@@ -46,15 +47,30 @@ class ImageHandler:
 
         pass
 
+    def find_text_in_array(self, text, arrays, window):
+        '''
+        Returns the location information, format is (top_x, top_y, width, height) of the text. This function will first iterate over the arrays, find matched text and check it is in the window. If the matched text is in the window, the function will return the text location. If no matched text found returns None.
+        '''
+        for r in arrays:
+            if text in r[1] and self.check_point_inide_rect(r[0][0], window):
+                return r[0]        
+        return None
+    
+
     def check_text_and_filter(self, image, arrays, position, text, filter_args_in_parent, rect=None):
         if filter_args_in_parent is None:
             return True
-        window = self.find_window_outside_position(image, position)
+        window = self.find_window_outside_position(image, (position[0][0], position[0][1], position[1][0] - position[0][0], position[2][1] - position[0][1]))
         if window is None:
             return False
-        return True
+        
+        for filter_text in filter_args_in_parent:
+            location = self.find_text_in_array(filter_text, arrays, window)
+            if location is not None:
+                return True
+        return False
 
-    def find_text_in_image(self, image,  text, filter_args_in_parent=None, rect=None):
+    def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
         If the text is not found, returns None.
@@ -66,18 +82,19 @@ class ImageHandler:
         (position, target_text, best_ratio) = None, None, 0
         for r in arr:  
             ratio = SequenceMatcher(None, r[1], text).ratio()
-            if  text in r[1] and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter(image, arr, r[0], r[1], filter_args_in_parent, rect):  
-                position = r[0]
-                target_text = r[1]
-                break
-            elif ratio > best_ratio and ratio > 0.6 and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None):
+            if  text in r[1]: 
+                if ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter(image, arr, r[0], r[1], filter_args_in_parent, rect): 
+                    position = r[0]
+                    target_text = r[1]
+                    break
+            elif ratio > best_ratio and ratio > 0.6 and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter(image, arr, r[0], r[1], filter_args_in_parent, rect):  
                 best_ratio = ratio
                 target_text = r[1]
                 position = r[0]
         #cv2.destroyAllWindows()
 
         if target_text is None:
-            return None, None
+            return None
         
         return (position[0][0], position[0][1], position[1][0]-position[0][0], position[2][1]-position[0][1])
 
@@ -94,8 +111,7 @@ class ImageHandler:
         edged = cv2.Canny(gray, 50, 200, apertureSize = 5) 
 
         # using a findContours() function 
-        contours, _ = cv2.findContours( 
-            edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+        contours, _ = cv2.findContours( edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
         
         i = 0
         dist = 1000000
@@ -103,21 +119,22 @@ class ImageHandler:
         target_information = None
 
         if self.debug_mode:
-            cv2.drawContours(img, contours, -1, (0, 255, 0), 1)  
-            cv2.imshow('shapes', img) 
-            cv2.waitKey(self.debug_image_show_milliseconds)
-
+                cv2.drawContours(img, contours, -1, (0, 255, 0), 1)  
+                cv2.imshow('shapes', img) 
+                cv2.waitKey(0)
         # list for storing names of shapes 
         for contour in contours: 
             # Approximate contour to a polygon
             perimeter = cv2.arcLength(contour, True)
             approx = cv2.approxPolyDP(contour, 0.01 * perimeter, True)
 
+          
+           
             # Calculate aspect ratio and bounding box
-            if len(approx) == 4:
+            if len(approx) >= 4:
                 x, y, w, h = cv2.boundingRect(approx)
 
-                if(h<10 and w<10):
+                if(h<10 or w<10):
                     #ignore too small shapes
                     continue
 

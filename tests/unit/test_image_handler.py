@@ -12,8 +12,26 @@ class TestImageHandler:
     def setup_class(cls):
         cls.handler = ImageHandler(debug_mode=True)
 
+    def test_find_text_in_image(self):
+        image = PIL.Image.open('./tests/unit/text_and_window.png')
+        location = self.handler.find_text_in_image(image, "Welcome")
+        assert location is not None, "Welcome text not found in the image"
+
+        location = self.handler.find_text_in_image(image, "Welcome", ["dummy_text"])
+        assert location is None, "Welcome with dummy_text should not be found in the image"
+
+        location = self.handler.find_text_in_image(image, "Text File")
+        assert location is not None, "Text File text not found in the image"
+
+        location = self.handler.find_text_in_image(image, "Text File", ["Built-In"])
+        assert location is not None, "'Text File' with 'Built-In' should be found in the image"
+
+        location = self.handler.find_text_in_image(image, "Text File", ["dummy_text"])
+        assert location is None, "'Text File' with 'dummy_text' should not be found in the image"
+
     def test_find_window_outside_position(self):
         image = PIL.Image.open('./tests/unit/text_and_window.png')
+        
         location = self.handler.find_text_in_image(image, "Welcome")
         logger.debug(f"Welcome text found at {location}")
         window = self.handler.find_window_outside_position(image, location)
