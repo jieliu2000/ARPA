@@ -41,9 +41,14 @@ class ARPA:
         else:
             time.sleep(seconds)
 
-    def find_window_by_title(self, title):
+    def find_window_by_title(self, title, image):
         '''Find a window by its title. This function will return the window if it exists, otherwise it will return None.'''
-        return self.find_control_near_text(title)
+        text_location = self.image_handler.find_text_in_image(image, title)
+        if(text_location is None):
+            return None
+        else:
+            window = self.image_handler.find_window_outside_position(image, text_location)
+            return window
 
     def find_control_near_text(self, text):
         '''Find a control near a specific text. This function will return the control if it exists, otherwise it will return None.'''
@@ -76,7 +81,7 @@ class ARPA:
                 search_in_image = None
     
         
-    def validate_text_exists(self, text, filter_args_in_parent, parent_control = None, img = None):
+    def validate_text_exists(self, text, filter_args_in_parent=None, parent_control = None, img = None):
         '''Validate whether a specific text exists in the current screen. This function will return True if the text exists, otherwise it will return False.'''
         if img is None:
             img = self.take_screenshot()
@@ -156,7 +161,7 @@ class ARPA:
         logger.debug('Click by text inside window:' + text + " window title: " + window_title)
         img = self.take_screenshot(window_title)
 
-        window = self.find_window_by_title(window_title)
+        window = self.find_window_by_title(window_title, img)
         if(window is None):
             return None
         else:
@@ -219,7 +224,7 @@ Modifiers:
         if(location is None):
             logger.error('Cannot find field:', field_name)
             return
-        (x,y,w,h) = self.image_handler.find_control_near_position(img, location[0])
+        (x,y,w,h) = self.image_handler.find_control_near_position(img, location)
         self.click_by_position(x+3, y+3)
         self.input_text(text)
         self.sleep()

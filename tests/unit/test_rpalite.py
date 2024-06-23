@@ -1,4 +1,5 @@
 from ARPA import ARPA
+import PIL
 
 def get_test_app_and_description():
         return "notepad.exe", "", "Notepad"
@@ -16,6 +17,11 @@ class TestARPA:
      
     def test_click_ocr(self):
         self.arpa.click("ocr:./tests/unit/start.png")
+
+    def test_find_window_by_title(self):
+        image = PIL.Image.open('./tests/unit/text_and_window2.png')
+        window = self.arpa.find_window_by_title('Solution Explorer', image)
+        assert window is not None
 
     def close_app(self):
         test_app_and_description = get_test_app_and_description()
