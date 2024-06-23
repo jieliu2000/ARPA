@@ -1,4 +1,5 @@
 
+import PIL.Image
 from robot.api.deco import keyword, library, not_keyword
 from robot.api import logger
 import re
@@ -60,11 +61,11 @@ class ARPA:
             img.save(filename)
         return img
 
-    def wait_until_text_exists(self, text, parent_control = None, img = None, timeout = 30):
+    def wait_until_text_exists(self, text, filter_args_in_parent=None, parent_control = None, search_in_image = None, timeout = 30):
         '''Wait until a specific text exists in the current screen. This function will return the location if the text exists, otherwise it will return None.'''
         start_time = datetime.now()
         while(True):
-            location = self.validate_text_exists(text, parent_control, img)
+            location = self.validate_text_exists(text, filter_args_in_parent, parent_control, search_in_image)
             if(location is not None):
                 return location 
             else:
@@ -72,15 +73,15 @@ class ARPA:
                 if(diff.seconds > timeout):
                     raise AssertionError('Timeout waiting for text: ' + text)
                 self.sleep(1)
-                img = None
+                search_in_image = None
     
         
-    def validate_text_exists(self, text, parent_control = None, img = None):
+    def validate_text_exists(self, text, filter_args_in_parent, parent_control = None, img = None):
         '''Validate whether a specific text exists in the current screen. This function will return True if the text exists, otherwise it will return False.'''
         if img is None:
             img = self.take_screenshot()
         
-        location = self.image_handler.find_text_in_image(img, text, parent_control)
+        location = self.image_handler.find_text_in_image(img, text, filter_args_in_parent, parent_control)
         if(location is None or location[0] is None or location[1] is None):
             return None
         else:
@@ -133,12 +134,22 @@ class ARPA:
                 self.sleep()
             
 
-    def click(self, locator):
+    def click(self, locator,  button='left', double_click= False):
         '''Click on a control. The parameter could be a locator or the control's text (like the button text or the field name)'''
         if(isinstance(locator, str) and locator.startswith('ocr:')):
-            logger.debug('Clicking OCR:', locator)
-            pass
+            path = locator.split('ocr:')[1]
+            logger.debug('Clicking OCR:', path)
+
+            self.click_by_image(path, button, double_click)
         pass
+
+    def click_by_image(self, image_path, button='left', double_click= False):
+        img = PIL.Image.open(image_path)
+        screenshot = self.take_screenshot()
+            
+        location = self.image_handler.find_image_location(img, screenshot)
+        if(location is not None):
+                self.click_by_position(int(location[0]) + 2, int(location[1]) + 2)
 
     def click_by_text_inside_window(self, text, window_title, button='left', double_click= False):
         '''Click the positon of a string on screen. '''
@@ -151,17 +162,17 @@ class ARPA:
         else:
             location = self.validate_text_exists(text, window, img)
             if(location is not None and location[0]):
-                self.click_by_position(int(location[0][0]), int(location[0][1]), button, double_click)
+                self.click_by_position(int(location[0]), int(location[1]), button, double_click)
             self.sleep()
 
 
         self.sleep()
 
-    def click_by_text(self, text, button='left', double_click=False):
+    def click_by_text(self, text, button='left', double_click=False, filter_args_in_parent=None):
         '''Click the positon of a string on screen. '''
         logger.debug('Click by text:', text)
         img = PIL.ImageGrab.grab(all_screens=True)
-        location = self.wait_until_text_exists(text)
+        location = self.wait_until_text_exists(text, filter_args_in_parent)
         if(location is not None and location[0]):
             self.click_by_position(int(location[0][0]), int(location[0][1]), button, double_click)
         self.sleep()

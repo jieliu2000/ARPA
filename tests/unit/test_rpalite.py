@@ -1,6 +1,5 @@
 from ARPA import ARPA
 
-
 def get_test_app_and_description():
         return "notepad.exe", "", "Notepad"
 
@@ -15,6 +14,8 @@ class TestARPA:
         self.arpa.run_command(get_test_app_and_description()[0]) 
         return self.arpa.find_application(get_test_app_and_description()[1], get_test_app_and_description()[2])
      
+    def test_click_ocr(self):
+        self.arpa.click("ocr:./tests/unit/start.png")
 
     def close_app(self):
         test_app_and_description = get_test_app_and_description()
