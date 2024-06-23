@@ -174,7 +174,7 @@ class ARPA:
         img = PIL.ImageGrab.grab(all_screens=True)
         location = self.wait_until_text_exists(text, filter_args_in_parent)
         if(location is not None and location[0]):
-            self.click_by_position(int(location[0][0]), int(location[0][1]), button, double_click)
+            self.click_by_position(int(location[0]), int(location[1]), button, double_click)
         self.sleep()
 
       
