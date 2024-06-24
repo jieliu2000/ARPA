@@ -30,7 +30,6 @@ class ImageHandler:
                 return True
         return False
         
-        return rect[0] <= point[0] <= rect[0] + rect[2] and rect[1] <= point[1] <= rect[1] + rect[3]
     
     def find_image_location(self, image, parentImage):
         if parentImage is None or image is None:
@@ -88,12 +87,16 @@ class ImageHandler:
         if rects == None:
             return self.find_text_in_image(image, text, filter_args_in_parent)
         if type(rects) == list and len(rects) > 0:
-            rect = rects[0]
-            pass
-        pass
+            
+            arr = self.reader.readtext(np.array(image))
+            for rect in rects:
+                loc = self.find_text_in_array(text, arr, image, filter_args_in_parent, rect)
+                if loc is not None:
+                    return loc  
+        else:
+            return self.find_text_in_image(image, text, filter_args_in_parent, rects)      
         
-    
-    def find_text_in_array(self, text, text_arr, filter_args_in_parent=None, rect = None):
+    def find_text_in_array(self, text, text_arr, image, filter_args_in_parent=None, rect = None):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
         '''
@@ -101,20 +104,19 @@ class ImageHandler:
         for r in text_arr:  
             ratio = SequenceMatcher(None, r[1], text).ratio()
             if  text in r[1]: 
-                if ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter_in_window(image, arr, r[0], r[1], filter_args_in_parent, rect): 
+                if ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter_in_window(image, text_arr, r[0], r[1], filter_args_in_parent, rect): 
                     position = r[0]
                     target_text = r[1]
                     break
 
-            elif ratio > best_ratio and ratio > 0.6 and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None):
+            elif ratio > best_ratio and ratio > 0.6 and ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter_in_window(image, text_arr, r[0], r[1], filter_args_in_parent, rect):
                 best_ratio = ratio
                 target_text = r[1]
                 position = r[0]
         #cv2.destroyAllWindows()
 
         if target_text is None:
-            return None, None
-        
+            return None
         return (position[0], position[1])
 
     def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None):
@@ -125,10 +127,10 @@ class ImageHandler:
         if self.debug_mode:
             cv2.imshow('shapes', np.array(image)) 
             cv2.waitKey(0)
-        reader = easyocr.Reader(['ch_sim','en']) # this needs to run only once to load the model into memory
-        arr = reader.readtext(np.array(image))
         
-        return self.find_text_in_array(text, arr, filter_args_in_parent, rect)
+        arr = self.reader.readtext(np.array(image))
+        
+        return self.find_text_in_array(text, arr, image, filter_args_in_parent, rect)
 
 
     def validate_inside(self, rect, target):
