@@ -4,8 +4,13 @@ import numpy as np
 from difflib import SequenceMatcher
 
 class ImageHandler:
-    def __init__(self, debug_mode = False):
+    def __init__(self, debug_mode = False, languages = ['ch_sim','en'], debug_image_show_seconds=5):
+        '''
+        Initialize the ImageHandler class. This class use EasyOCR for text OCR. About language codes please check https://www.jaided.ai/easyocr/'''
         self.debug_mode = debug_mode
+        self.languages = languages
+        self.debug_image_show_milliseconds = debug_image_show_seconds * 1000
+        self.reader = easyocr.Reader(languages) # this needs to run only once to load the model into memory
         pass
     
     def check_point_inide_rect(self, point, rect):
@@ -33,7 +38,7 @@ class ImageHandler:
         # Find the location of the image in the parent image
         if self.debug_mode:
             cv2.imshow('shapes', np.array(parentImage)) 
-            cv2.waitKey(0)
+            cv2.waitKey(self.debug_image_show_milliseconds)
 
         gray = cv2.cvtColor(np.array(parentImage), cv2.COLOR_BGR2GRAY)
         
@@ -237,9 +242,6 @@ class ImageHandler:
         contours, _ = cv2.findContours( 
             edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
         
-        if self.debug_mode:
-            cv2.drawContours(img, contours, -1, (0, 255, 0), 1) 
-
         i = 0
         dist = 1000000
         a = 0
@@ -265,12 +267,12 @@ class ImageHandler:
                     dist = dist1
                     target_information = approx, (x, y, w, h)
         # displaying the image after drawing contours 
+        if(target_information is None):
+            return None
         if self.debug_mode:
             cv2.drawContours(img, [target_information[0]], -1, (0, 255, 0), 1)
             cv2.imshow('shapes', img) 
-            cv2.waitKey(0)
-        if(target_information != None):
-            #cv2.destroyAllWindows()
-            return target_information[1]
-        return None
+            cv2.waitKey(self.debug_image_show_milliseconds)
+   
+        return target_information[1]
     
