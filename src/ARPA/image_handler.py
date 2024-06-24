@@ -63,7 +63,7 @@ class ImageHandler:
         '''
         for r in arrays:
             if text in r[1] and self.check_point_inide_rects(r[0][0], windows):
-                return r[0]        
+                return r[0][0]        
         return None
     
 
@@ -80,6 +80,9 @@ class ImageHandler:
                 return True
         return False
 
+
+
+  
     def find_text_in_rects(self, image, text, filter_args_in_parent=None, rects=None):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
@@ -90,13 +93,13 @@ class ImageHandler:
             
             arr = self.reader.readtext(np.array(image))
             for rect in rects:
-                loc = self.find_text_in_array(text, arr, image, filter_args_in_parent, rect)
+                loc = self.find_text_in_array_and_rect(text, arr, image, filter_args_in_parent, rect)
                 if loc is not None:
                     return loc  
         else:
             return self.find_text_in_image(image, text, filter_args_in_parent, rects)      
         
-    def find_text_in_array(self, text, text_arr, image, filter_args_in_parent=None, rect = None):
+    def find_text_in_array_and_rect(self, text, text_arr, image, filter_args_in_parent=None, rect = None):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
         '''
@@ -117,7 +120,10 @@ class ImageHandler:
 
         if target_text is None:
             return None
-        return (position[0], position[1])
+        
+        (x, y, w, h) = position[0][0], position[0][1], position[1][0]-position[0][0], position[1][1]-position[0][1]
+        return (x,y,w,h)
+
 
     def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None):
         '''
@@ -130,7 +136,7 @@ class ImageHandler:
         
         arr = self.reader.readtext(np.array(image))
         
-        return self.find_text_in_array(text, arr, image, filter_args_in_parent, rect)
+        return self.find_text_in_array_and_rect(text, arr, image, filter_args_in_parent, rect)
 
 
     def validate_inside(self, rect, target):
