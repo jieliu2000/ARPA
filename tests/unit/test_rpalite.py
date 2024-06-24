@@ -17,6 +17,11 @@ class TestARPA:
     def test_click_ocr(self):
         self.arpa.click("ocr:./tests/unit/start.png")
 
+    def test_find_window_by_title(self):
+        image = PIL.Image.open('./tests/unit/text_and_window2.png')
+        window = self.arpa.find_windows_by_title('Solution Explorer', image)
+        assert window is not None
+
     def close_app(self):
         test_app_and_description = get_test_app_and_description()
         application = self.arpa.find_application(test_app_and_description[1], test_app_and_description[2])

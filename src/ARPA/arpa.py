@@ -41,9 +41,14 @@ class ARPA:
         else:
             time.sleep(seconds)
 
-    def find_window_by_title(self, title):
+    def find_windows_by_title(self, title, image):
         '''Find a window by its title. This function will return the window if it exists, otherwise it will return None.'''
-        return self.find_control_near_text(title)
+        text_location = self.image_handler.find_text_in_image(image, title)
+        if(text_location is None):
+            return None
+        else:
+            rects = self.image_handler.find_rects_outside_position(image, text_location)
+            return rects
 
     def find_control_near_text(self, text):
         '''Find a control near a specific text. This function will return the control if it exists, otherwise it will return None.'''
@@ -155,12 +160,11 @@ class ARPA:
         '''Click the positon of a string on screen. '''
         logger.debug('Click by text inside window:' + text + " window title: " + window_title)
         img = self.take_screenshot(window_title)
-
-        window = self.find_window_by_title(window_title)
-        if(window is None):
+        rects = self.find_windows_by_title(window_title, img)
+        if(rects is None || len(rects) ==0):
             return None
         else:
-            location = self.validate_text_exists(text, window, img)
+            location = self.validate_text_exists(text, rects, img)
             if(location is not None and location[0]):
                 self.click_by_position(int(location[0][0]), int(location[0][1]), button, double_click)
             self.sleep()
