@@ -10,7 +10,7 @@ class TestImageHandler:
     
     @classmethod
     def setup_class(cls):
-        cls.handler = ImageHandler(debug_mode=True)
+        cls.handler = ImageHandler(debug_mode=False)
 
     def test_find_text_in_image(self):
         image = PIL.Image.open('./tests/unit/text_and_window.png')
