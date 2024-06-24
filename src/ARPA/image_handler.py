@@ -87,19 +87,13 @@ class ImageHandler:
             pass
         pass
         
-    def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None):
+    
+    def find_text_in_array(self, text, text_arr, filter_args_in_parent=None, rect = None):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
-        If the text is not found, returns None.
         '''
-    def find_text_in_image(self, image, text, rect=None):
-        if self.debug_mode:
-            cv2.imshow('shapes', np.array(image)) 
-            cv2.waitKey(0)
-        reader = easyocr.Reader(['ch_sim','en']) # this needs to run only once to load the model into memory
-        arr = reader.readtext(np.array(image))
         (position, target_text, best_ratio) = None, None, 0
-        for r in arr:  
+        for r in text_arr:  
             ratio = SequenceMatcher(None, r[1], text).ratio()
             if  text in r[1]: 
                 if ((rect is not None and self.check_point_inide_rect(r[0][0], rect)) or rect is None) and self.check_text_and_filter_in_window(image, arr, r[0], r[1], filter_args_in_parent, rect): 
@@ -117,6 +111,20 @@ class ImageHandler:
             return None, None
         
         return (position[0], position[1])
+
+    def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None):
+        '''
+        Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
+        If the text is not found, returns None.
+        '''
+        if self.debug_mode:
+            cv2.imshow('shapes', np.array(image)) 
+            cv2.waitKey(0)
+        reader = easyocr.Reader(['ch_sim','en']) # this needs to run only once to load the model into memory
+        arr = reader.readtext(np.array(image))
+        
+        return self.find_text_in_array(text, arr, filter_args_in_parent, rect)
+
 
     def validate_inside(self, rect, target):
         # Check if the rectangle is inside the target rectangle. Paramete rect and target's formats are (x, y, width, height)

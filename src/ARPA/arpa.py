@@ -161,7 +161,7 @@ class ARPA:
         logger.debug('Click by text inside window:' + text + " window title: " + window_title)
         img = self.take_screenshot(window_title)
         rects = self.find_windows_by_title(window_title, img)
-        if(rects is None || len(rects) ==0):
+        if(rects is None or len(rects) ==0):
             return None
         else:
             location = self.validate_text_exists(text, rects, img)
