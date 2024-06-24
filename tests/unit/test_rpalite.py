@@ -8,7 +8,7 @@ class TestARPA:
 
     @classmethod
     def setup_class(cls):
-        cls.arpa = ARPA()
+        cls.arpa = ARPA(debug_mode=True)
 
 
     def open_app(self):

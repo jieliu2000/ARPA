@@ -160,7 +160,6 @@ class ARPA:
         '''Click the positon of a string on screen. '''
         logger.debug('Click by text inside window:' + text + " window title: " + window_title)
         img = self.take_screenshot(window_title)
-
         window = self.find_window_by_title(window_title, img)
         if(window is None):
             return None
@@ -176,7 +175,6 @@ class ARPA:
     def click_by_text(self, text, button='left', double_click=False, filter_args_in_parent=None):
         '''Click the positon of a string on screen. '''
         logger.debug('Click by text:', text)
-        img = PIL.ImageGrab.grab(all_screens=True)
         location = self.wait_until_text_exists(text, filter_args_in_parent)
         if(location is not None and location[0]):
             self.click_by_position(int(location[0]), int(location[1]), button, double_click)
