@@ -83,23 +83,23 @@ class ImageHandler:
 
 
   
-    def find_text_in_rects(self, image, text, filter_args_in_parent=None, rects=None):
+    def find_text_in_rects(self, image, text, filter_args_in_parent=None, rects=None, show_position_mark=False):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
         '''
         if rects == None:
-            return self.find_text_in_image(image, text, filter_args_in_parent)
+            return self.find_text_in_image(image, text, filter_args_in_parent, show_position_mark)
         if type(rects) == list and len(rects) > 0:
             
             arr = self.reader.readtext(np.array(image))
             for rect in rects:
-                loc = self.find_text_in_array_and_rect(text, arr, image, filter_args_in_parent, rect)
+                loc = self.find_text_in_array_and_rect(text, arr, image, filter_args_in_parent, rect, show_position_mark)
                 if loc is not None:
                     return loc  
         else:
-            return self.find_text_in_image(image, text, filter_args_in_parent, rects)      
+            return self.find_text_in_image(image, text, filter_args_in_parent, rects, show_position_mark)      
         
-    def find_text_in_array_and_rect(self, text, text_arr, image, filter_args_in_parent=None, rect = None):
+    def find_text_in_array_and_rect(self, text, text_arr, image, filter_args_in_parent=None, rect = None, show_position_mark= False):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
         '''
@@ -125,7 +125,7 @@ class ImageHandler:
         return (x,y,w,h)
 
 
-    def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None):
+    def find_text_in_image(self, image, text, filter_args_in_parent=None, rect=None, show_position_mark=False):
         '''
         Returns the location information, format is (top_x, top_y, width, height) of the text in the image.
         If the text is not found, returns None.
@@ -136,7 +136,7 @@ class ImageHandler:
         
         arr = self.reader.readtext(np.array(image))
         
-        return self.find_text_in_array_and_rect(text, arr, image, filter_args_in_parent, rect)
+        return self.find_text_in_array_and_rect(text, arr, image, filter_args_in_parent, rect, show_position_mark)
 
 
     def validate_inside(self, rect, target):

@@ -6,6 +6,7 @@ import re
 import PIL
 from pywinauto import mouse, keyboard, findwindows, Application
 import pyautogui
+from warnings import deprecated
 import time
 import platform
 from datetime import datetime
@@ -72,7 +73,7 @@ class ARPA:
         '''Wait until a specific text exists in the current screen. This function will return the location if the text exists, otherwise it will return None.'''
         start_time = datetime.now()
         while(True):
-            location = self.validate_text_exists(text, filter_args_in_parent, parent_control, search_in_image)
+            location = self.find_text(text, filter_args_in_parent, parent_control, search_in_image)
             if(location is not None):
                 return location 
             else:
@@ -82,13 +83,19 @@ class ARPA:
                 self.sleep(1)
                 search_in_image = None
     
-        
-    def validate_text_exists(self, text, filter_args_in_parent=None, parent_control = None, img = None):
+
+
+    @deprecated('This function is deprecated. Use find_text function instead.')
+    def validate_text_exists(self, text, filter_args_in_parent=None, parent_control = None, img = None, show_result_image = True):
+        '''Validate whether a specific text exists in the current screen. This function will return True if the text exists, otherwise it will return False.'''
+        return self.find_text(text, filter_args_in_parent, parent_control, img, show_result_image)
+            
+    def find_text(self, text, filter_args_in_parent=None, parent_control = None, img = None, show_result_image = False):
         '''Validate whether a specific text exists in the current screen. This function will return True if the text exists, otherwise it will return False.'''
         if img is None:
             img = self.take_screenshot()
         
-        location = self.image_handler.find_text_in_rects(img, text, filter_args_in_parent, parent_control)
+        location = self.image_handler.find_text_in_rects(img, text, filter_args_in_parent, parent_control, show_result_image)
         if(location is None or location[0] is None or location[1] is None):
             return None
         else:
@@ -166,7 +173,7 @@ class ARPA:
         if(rects is None or len(rects) ==0):
             return None
         else:
-            location = self.validate_text_exists(text, rects, img)
+            location = self.find_text(text, rects, img)
             if(location is not None and location[0]):
                 self.click_by_position(int(location[0]), int(location[1]), button, double_click)
             self.sleep()
