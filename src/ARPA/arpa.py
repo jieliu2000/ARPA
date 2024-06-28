@@ -41,7 +41,7 @@ class ARPA:
         else:
             time.sleep(seconds)
 
-    def find_windows_by_title(self, title, image):
+    def find_windows_by_title(self, title, image=None):
         '''Find a window by its title. This function will return the window if it exists, otherwise it will return None.'''
         if image is None:
             image = self.take_screenshot()
