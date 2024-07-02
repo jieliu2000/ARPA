@@ -2,13 +2,13 @@ from ARPA import ARPA
 import PIL
 
 def get_test_app_and_description():
-        return "notepad.exe", "", "Notepad"
+        return "notepad.exe", ".*Notepad.*", "Notepad"
 
 class TestARPA:
 
     @classmethod
     def setup_class(cls):
-        cls.arpa = ARPA(debug_mode=True)
+        cls.arpa = ARPA(debug_mode=False)
 
 
     def open_app(self):
